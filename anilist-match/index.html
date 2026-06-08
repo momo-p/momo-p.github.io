@@ -171,14 +171,14 @@
         font-size: 15px;
       }
 
-      /* Anime Cover Grid Layouts */
+      /* Bulletproof Anime Cover Grid Layouts */
       .anime-grid-container {
         margin-bottom: 16px;
       }
 
       .anime-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
         gap: 16px;
         margin-top: 8px;
       }
@@ -203,21 +203,18 @@
 
       .anime-thumb {
         width: 100%;
-        height: 180px;
+        height: 190px;
         object-fit: cover;
         background-color: var(--border-color);
       }
 
-      /* The footer isolates layout math from line-clamp clipping bugs */
       .anime-card-footer {
-        padding: 6px 8px;
+        padding: 10px 8px;
         background-color: var(--container-bg);
-        margin-top: auto;
-        height: 50px;
-        box-sizing: border-box;
         display: flex;
-        align-items: center;
+        flex-direction: column;
         justify-content: center;
+        flex-grow: 1; /* Automatically stretches so all cards in a row match height */
       }
 
       .anime-card-title {
@@ -225,14 +222,13 @@
         font-weight: 600;
         line-height: 1.4;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 3; /* Safely allows up to 3 lines without breaking */
         -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
         word-break: break-word;
         color: var(--text-muted);
         text-align: center;
-        width: 100%;
+        margin: 0;
       }
 
       .anime-card:hover .anime-card-title {
@@ -340,17 +336,12 @@
         return Math.min(a, b) / Math.max(a, b);
       }
 
-      // ==========================================
-      // INITIALIZATION, URL ROUTING & KEYBINDS
-      // ==========================================
       window.addEventListener("DOMContentLoaded", () => {
         const u1El = document.getElementById("user1");
         const u2El = document.getElementById("user2");
 
         const handleEnter = (e) => {
-          if (e.key === "Enter") {
-            runAnalysis();
-          }
+          if (e.key === "Enter") runAnalysis();
         };
         u1El.addEventListener("keypress", handleEnter);
         u2El.addEventListener("keypress", handleEnter);
@@ -369,7 +360,7 @@
       });
 
       // ==========================================
-      // LOCAL STORAGE CACHE LAYER (WITH TIMEOUT)
+      // LOCAL STORAGE CACHE LAYER
       // ==========================================
       function loadUserCache(username) {
         const cached = localStorage.getItem(
@@ -392,10 +383,7 @@
       }
 
       function saveUserCache(username, data) {
-        const cacheWrapper = {
-          timestamp: Date.now(),
-          data: data,
-        };
+        const cacheWrapper = { timestamp: Date.now(), data: data };
         localStorage.setItem(
           `anilist_cache_${username.toLowerCase()}`,
           JSON.stringify(cacheWrapper),
@@ -431,9 +419,9 @@
             MediaListCollection(userName: $username, type: ANIME) {
                 lists {
                     name
-                    status
                     entries {
                         mediaId
+                        status
                         score(format: POINT_100)
                         media {
                             title { english romaji }
@@ -471,27 +459,28 @@
         const json = await response.json();
         const data = json.data;
 
-        const collection = data.MediaListCollection || {};
-        const userBase = data.User || {};
-
-        if (!collection.lists || !userBase.name) {
+        if (!data.MediaListCollection || !data.User) {
           throw new Error(
             `Profile data structures incomplete for target profile: ${username}`,
           );
         }
 
-        const normalizedEntries = [];
-        for (const list of collection.lists) {
+        // DEDUPLICATION FIX: Fetches the explicit canonical status directly from the entry
+        // object, entirely bypassing custom list status inheritance anomalies.
+        const entriesMap = new Map();
+        for (const list of data.MediaListCollection.lists) {
           for (const entry of list.entries) {
-            entry.user_status = list.status;
-            normalizedEntries.push(entry);
+            if (!entriesMap.has(entry.mediaId)) {
+              entry.user_status = entry.status || "UNKNOWN";
+              entriesMap.set(entry.mediaId, entry);
+            }
           }
         }
 
         const userData = {
-          name: userBase.name,
-          favourites: userBase.favourites || {},
-          entries: normalizedEntries,
+          name: data.User.name,
+          favourites: data.User.favourites || {},
+          entries: Array.from(entriesMap.values()),
         };
 
         saveUserCache(username, userData);
@@ -711,7 +700,7 @@
               image: e.media.coverImage?.large || map2[e.mediaId].img,
               status1: e.user_status,
               status2: map2[e.mediaId].status,
-              airingStatus: map2[e.mediaId].air,
+              airingStatus: e.media.status || map2[e.mediaId].air,
             });
           }
         });
@@ -824,7 +813,7 @@
       }
 
       // ==========================================
-      // PAGINATION GENERATION LAYER (BATCHED BY 20)
+      // PAGINATION GENERATION LAYER
       // ==========================================
       function buildDynamicGridHTML(items, cardGeneratorFunc) {
         if (!items.length) {
@@ -906,9 +895,15 @@
 
         displayList.forEach((d) => {
           const payload = { title: d.title, image: d.image };
-          const s1 = d.status1,
+          let s1 = d.status1,
             s2 = d.status2;
           const airing = d.airingStatus;
+
+          // UNRELEASED GLITCH FIX: Forces any unreleased media into planning logic
+          if (airing === "NOT_YET_RELEASED") {
+            s1 = "PLANNING";
+            s2 = "PLANNING";
+          }
 
           if (s1 === "PLANNING" && s2 === "PLANNING") {
             if (airing === "NOT_YET_RELEASED")
@@ -935,9 +930,14 @@
 
         const renderSectionBlock = (label, targetArray) => {
           if (!targetArray.length) return;
-          html += `<div class="sub-label">${label} (${targetArray.length} total)</div>`;
-          targetArray.sort((a, b) => a.title.localeCompare(b.title));
-          html += buildDynamicGridHTML(targetArray, cardGenerator);
+
+          const uniqueMap = new Map();
+          targetArray.forEach((item) => uniqueMap.set(item.title, item));
+          const uniqueArray = Array.from(uniqueMap.values());
+          uniqueArray.sort((a, b) => a.title.localeCompare(b.title));
+
+          html += `<div class="sub-label">${label} (${uniqueArray.length} total)</div>`;
+          html += buildDynamicGridHTML(uniqueArray, cardGenerator);
         };
 
         renderSectionBlock("Both Active or Completed", watchedBoth);
@@ -968,13 +968,19 @@
       }
 
       function renderGridBlockHTML(displayList) {
-        displayList.sort((a, b) => {
+        const uniqueMap = new Map();
+        displayList.forEach((item) =>
+          uniqueMap.set(item.title || item.name, item),
+        );
+        const uniqueArray = Array.from(uniqueMap.values());
+
+        uniqueArray.sort((a, b) => {
           const nameA = a.title || a.name || "";
           const nameB = b.title || b.name || "";
           return nameA.localeCompare(nameB);
         });
 
-        return buildDynamicGridHTML(displayList, (item, style) => {
+        return buildDynamicGridHTML(uniqueArray, (item, style) => {
           const titleString = item.title || item.name || "Unknown";
           return `
                 <div class="anime-card" ${style}>
