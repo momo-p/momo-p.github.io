@@ -88,7 +88,6 @@
       .btn-primary {
         background-color: var(--accent-color);
       }
-
       .btn-primary:hover {
         background-color: var(--accent-hover);
       }
@@ -98,7 +97,6 @@
         border: 1px solid var(--border-color);
         color: var(--text-muted);
       }
-
       .btn-secondary:hover {
         border-color: var(--danger-color);
         color: var(--danger-color);
@@ -124,7 +122,6 @@
         margin-bottom: 24px;
         text-align: center;
       }
-
       .report-header h2 {
         margin: 0 0 8px 0;
         color: var(--text-color);
@@ -162,7 +159,6 @@
         font-size: 13px;
         margin-bottom: 14px;
       }
-
       .sub-label {
         font-weight: 600;
         color: var(--accent-color);
@@ -175,7 +171,6 @@
       .anime-grid-container {
         margin-bottom: 16px;
       }
-
       .anime-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -195,7 +190,6 @@
           border-color 0.2s;
         height: 100%;
       }
-
       .anime-card:hover {
         transform: translateY(-4px);
         border-color: var(--accent-color);
@@ -214,7 +208,7 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
-        flex-grow: 1; /* Automatically stretches so all cards in a row match height */
+        flex-grow: 1;
       }
 
       .anime-card-title {
@@ -222,7 +216,7 @@
         font-weight: 600;
         line-height: 1.4;
         display: -webkit-box;
-        -webkit-line-clamp: 3; /* Safely allows up to 3 lines without breaking */
+        -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
         word-break: break-word;
@@ -230,7 +224,6 @@
         text-align: center;
         margin: 0;
       }
-
       .anime-card:hover .anime-card-title {
         color: var(--accent-color);
       }
@@ -252,7 +245,6 @@
           background-color 0.2s,
           color 0.2s;
       }
-
       .load-more-btn:hover {
         background-color: rgba(61, 180, 242, 0.1);
         color: var(--accent-color);
@@ -268,7 +260,6 @@
         overflow: hidden;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-
       th,
       td {
         padding: 12px 16px;
@@ -276,19 +267,45 @@
         font-size: 14px;
         border-bottom: 1px solid var(--border-color);
       }
-
       th {
         background-color: var(--border-color);
         color: var(--text-color);
         font-weight: 600;
       }
-
       tr:last-child td {
         border-bottom: none;
       }
-
       .text-right {
         text-align: right;
+      }
+
+      /* SVG Graph Container */
+      .graph-scroll-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        background-color: var(--container-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        margin-top: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .graph-scroll-wrapper::-webkit-scrollbar {
+        height: 8px;
+      }
+      .graph-scroll-wrapper::-webkit-scrollbar-track {
+        background: var(--bg-color);
+      }
+      .graph-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+      }
+
+      svg circle {
+        transition: r 0.2s ease;
+      }
+      svg circle:hover {
+        r: 6;
       }
     </style>
   </head>
@@ -325,7 +342,7 @@
 
     <script>
       const EXPO_WEIGHTING_FACTOR = 1 / 3;
-      const CACHE_TIMEOUT_MS = 5 * 60 * 1000; // 5 Minutes Timeout
+      const CACHE_TIMEOUT_MS = 5 * 60 * 1000;
 
       function logStatus(msg) {
         document.getElementById("statusLog").innerText = msg;
@@ -370,9 +387,8 @@
           try {
             const parsed = JSON.parse(cached);
             if (parsed && parsed.timestamp && parsed.data) {
-              if (Date.now() - parsed.timestamp < CACHE_TIMEOUT_MS) {
+              if (Date.now() - parsed.timestamp < CACHE_TIMEOUT_MS)
                 return parsed.data;
-              }
             }
             localStorage.removeItem(`anilist_cache_${username.toLowerCase()}`);
           } catch (e) {
@@ -450,11 +466,10 @@
           body: JSON.stringify({ query, variables: { username } }),
         });
 
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(
             `AniList API resolution failed for user: ${username}`,
           );
-        }
 
         const json = await response.json();
         const data = json.data;
@@ -465,8 +480,6 @@
           );
         }
 
-        // DEDUPLICATION FIX: Fetches the explicit canonical status directly from the entry
-        // object, entirely bypassing custom list status inheritance anomalies.
         const entriesMap = new Map();
         for (const list of data.MediaListCollection.lists) {
           for (const entry of list.entries) {
@@ -493,21 +506,17 @@
       function scoreTotalAnime(u1, u2) {
         const e1 = u1.entries,
           e2 = u2.entries;
-
         const comp1 = e1.filter((e) => e.user_status === "COMPLETED").length;
         const comp2 = e2.filter((e) => e.user_status === "COMPLETED").length;
-
         const plan1 = new Set(
           e1.filter((e) => e.user_status === "PLANNING").map((e) => e.mediaId),
         );
         const plan2 = new Set(
           e2.filter((e) => e.user_status === "PLANNING").map((e) => e.mediaId),
         );
-
         const set1Ids = e1.map((e) => e.mediaId);
         const set2Ids = e2.map((e) => e.mediaId);
         const sharedAnimeIds = set1Ids.filter((id) => set2Ids.includes(id));
-
         const bothPlanning = [...plan1].filter((id) => plan2.has(id)).length;
         const u1PlanningOnly = sharedAnimeIds.filter(
           (id) => plan1.has(id) && !plan2.has(id),
@@ -553,54 +562,140 @@
       }
 
       function scoreReleaseYear(u1, u2) {
-        const getDecades = (entries) => {
-          const decs = {};
+        const getYears = (entries) => {
+          const yrs = {};
+          let total = 0;
           entries.forEach((e) => {
-            const year = e.media?.startDate?.year;
-            if (year) {
-              const dec = `${Math.floor(year / 10) * 10}s`;
-              decs[dec] = (decs[dec] || 0) + 1;
+            const y = e.media?.startDate?.year;
+            if (y && y > 1960 && y <= new Date().getFullYear() + 2) {
+              yrs[y] = (yrs[y] || 0) + 1;
+              total++;
             }
           });
-          return decs;
+          return { yrs, total };
         };
 
-        const dec1 = getDecades(u1.entries),
-          dec2 = getDecades(u2.entries);
-        const allDecs = [
-          ...new Set([...Object.keys(dec1), ...Object.keys(dec2)]),
-        ].sort();
+        const y1 = getYears(u1.entries);
+        const y2 = getYears(u2.entries);
 
-        const scores = [];
-        const display = [];
+        const keys1 = Object.keys(y1.yrs).map(Number);
+        const keys2 = Object.keys(y2.yrs).map(Number);
 
-        allDecs.forEach((d) => {
-          const cnt1 = dec1[d] || 0,
-            cnt2 = dec2[d] || 0;
-          const prop1 = cnt1 / Math.max(1, u1.entries.length);
-          const prop2 = cnt2 / Math.max(1, u2.entries.length);
+        if (keys1.length === 0 && keys2.length === 0) {
+          return {
+            title: "Release Timeline Match",
+            score: 0,
+            weight: 1.0,
+            type: "year-line-chart",
+            display: [],
+          };
+        }
 
-          if (prop1 >= 0.01 && prop2 >= 0.01) {
-            scores.push(getRatio(prop1, prop2));
-            display.push({
-              title: d,
-              stats: [
-                `${Math.round(prop1 * 100)}%`,
-                `${Math.round(prop2 * 100)}%`,
-              ],
+        const min = Math.max(1960, Math.min(...keys1, ...keys2) - 1);
+        const max = Math.min(
+          new Date().getFullYear() + 2,
+          Math.max(...keys1, ...keys2) + 1,
+        );
+
+        const chartData = [];
+        let overlapArea = 0;
+
+        for (let i = min; i <= max; i++) {
+          const c1 = y1.yrs[i] || 0;
+          const c2 = y2.yrs[i] || 0;
+          chartData.push({ year: i, c1, c2 });
+
+          const d1 = y1.total > 0 ? c1 / y1.total : 0;
+          const d2 = y2.total > 0 ? c2 / y2.total : 0;
+          overlapArea += Math.min(d1, d2);
+        }
+
+        return {
+          title: "Release Timeline Match",
+          score: overlapArea,
+          weight: 1.0,
+          type: "year-line-chart",
+          display: chartData,
+        };
+      }
+
+      function scoreDensityMetadata(u1, u2, keyType, title) {
+        const aggregateDensity = (entries) => {
+          const counts = {};
+          let total = 0;
+          entries.forEach((e) => {
+            const media = e.media || {};
+            let targets = [];
+            if (keyType === "genres") targets = media.genres || [];
+            else if (keyType === "tags")
+              targets = (media.tags || []).map((t) => t.name);
+
+            targets.forEach((item) => {
+              counts[item] = (counts[item] || 0) + 1;
+              total++;
+            });
+          });
+          return { counts, total };
+        };
+
+        const dist1 = aggregateDensity(u1.entries);
+        const dist2 = aggregateDensity(u2.entries);
+        const allKeys = new Set([
+          ...Object.keys(dist1.counts),
+          ...Object.keys(dist2.counts),
+        ]);
+
+        let overlapArea = 0;
+        const allData = [];
+
+        allKeys.forEach((key) => {
+          const d1 =
+            dist1.total > 0 ? (dist1.counts[key] || 0) / dist1.total : 0;
+          const d2 =
+            dist2.total > 0 ? (dist2.counts[key] || 0) / dist2.total : 0;
+          const overlap = Math.min(d1, d2);
+          overlapArea += overlap;
+
+          if (d1 > 0.005 || d2 > 0.005) {
+            allData.push({
+              label: key,
+              d1,
+              d2,
+              overlap,
+              diff1: d1 - d2,
+              diff2: d2 - d1,
             });
           }
         });
 
-        const score = scores.length
-          ? scores.reduce((a, b) => a + b, 0) / scores.length
-          : 0;
+        // Split into the 3 Zones: U1 Favors, Shared, U2 Favors
+        const shared = [...allData]
+          .sort((a, b) => b.overlap - a.overlap)
+          .slice(0, 8)
+          .map((d) => ({ ...d, zone: "shared" }));
+
+        const u1Unique = [...allData]
+          .filter((d) => !shared.find((s) => s.label === d.label))
+          .sort((a, b) => b.diff1 - a.diff1)
+          .slice(0, 5)
+          .map((d) => ({ ...d, zone: "u1" }));
+
+        const u2Unique = [...allData]
+          .filter(
+            (d) =>
+              !shared.find((s) => s.label === d.label) &&
+              !u1Unique.find((u) => u.label === d.label),
+          )
+          .sort((a, b) => b.diff2 - a.diff2)
+          .slice(0, 5)
+          .map((d) => ({ ...d, zone: "u2" }));
+
         return {
-          title: "Release Year Stats",
-          score,
-          weight: 1.0,
-          type: "table",
-          display,
+          title: title,
+          score: overlapArea,
+          weight: 1.5,
+          type: "categorical-curve-chart",
+          display: [...u1Unique, ...shared, ...u2Unique],
         };
       }
 
@@ -620,13 +715,7 @@
           const store = {};
           entries.forEach((e) => {
             const media = e.media || {};
-            let targets = [];
-            if (keyType === "genres") targets = media.genres || [];
-            else if (keyType === "tags")
-              targets = (media.tags || []).map((t) => t.name);
-            else if (keyType === "studios")
-              targets = (media.studios?.nodes || []).map((s) => s.name);
-
+            let targets = (media.studios?.nodes || []).map((s) => s.name);
             targets.forEach((name) => {
               if (!store[name]) store[name] = { count: 0, scores: [] };
               store[name].count += 1;
@@ -692,7 +781,6 @@
               img: e.media.coverImage?.large || "",
             }),
         );
-
         u1.entries.forEach((e) => {
           if (map2[e.mediaId]) {
             display.push({
@@ -704,7 +792,6 @@
             });
           }
         });
-
         const ratio =
           display.length /
           Math.max(1, Math.min(u1.entries.length, u2.entries.length));
@@ -723,14 +810,12 @@
         );
         const r2 = u2.entries.filter((e) => e.score > 0).map((e) => e.mediaId);
         const common = r2.filter((id) => r1.has(id));
-
         const assets = u2.entries
           .filter((e) => common.includes(e.mediaId))
           .map((e) => ({
             title: e.media.title.english || e.media.title.romaji,
             image: e.media.coverImage?.large || "",
           }));
-
         const ratio = common.length / Math.max(1, Math.min(r1.size, r2.length));
         return {
           title: "Common Rated Overlap",
@@ -754,7 +839,6 @@
             title: e.media.title.english || e.media.title.romaji,
             image: e.media.coverImage?.large || "",
           }));
-
         return {
           title: "Mutual Max Perfects",
           score: Math.min(
@@ -773,7 +857,6 @@
         );
         const nodes2 = u2.favourites?.anime?.nodes || [];
         const commonNodes = nodes2.filter((n) => f1.has(n.id));
-
         const common = commonNodes.map((n) => ({
           title: n.title.english || n.title.romaji,
           image: n.coverImage?.large || "",
@@ -799,7 +882,6 @@
         const common = (u2.favourites?.characters?.nodes || [])
           .filter((n) => c1[n.id])
           .map((n) => c1[n.id]);
-
         return {
           title: "Shared Favorite Characters",
           score: Math.min(
@@ -810,51 +892,6 @@
           type: "grid-block",
           display: common,
         };
-      }
-
-      // ==========================================
-      // PAGINATION GENERATION LAYER
-      // ==========================================
-      function buildDynamicGridHTML(items, cardGeneratorFunc) {
-        if (!items.length) {
-          return `<div style="color:var(--text-muted); font-size: 14px; padding: 12px 4px;">[-] No shared tracking items.</div>`;
-        }
-
-        let html = '<div class="anime-grid-container">';
-        html += '<div class="anime-grid">';
-
-        items.forEach((item, index) => {
-          const stateStyle = index >= 20 ? 'style="display: none;"' : "";
-          html += cardGeneratorFunc(item, stateStyle);
-        });
-
-        html += "</div>";
-
-        if (items.length > 20) {
-          const delta = items.length - 20;
-          html += `<button class="load-more-btn" onclick="triggerBatchAppend(this)">Load More (+${delta} remaining)</button>`;
-        }
-
-        html += "</div>";
-        return html;
-      }
-
-      function triggerBatchAppend(btnElement) {
-        const container = btnElement.closest(".anime-grid-container");
-        const grid = container.querySelector(".anime-grid");
-        const hiddenElements = Array.from(grid.children).filter(
-          (el) => el.style.display === "none",
-        );
-
-        const nextChunk = hiddenElements.slice(0, 20);
-        nextChunk.forEach((el) => (el.style.display = "flex"));
-
-        const residual = hiddenElements.length - nextChunk.length;
-        if (residual <= 0) {
-          btnElement.style.display = "none";
-        } else {
-          btnElement.innerText = `Load More (+${residual} remaining)`;
-        }
       }
 
       // ==========================================
@@ -886,12 +923,278 @@
             </table>`;
       }
 
+      function renderLegend(name1, name2) {
+        return `
+            <div style="display: flex; gap: 24px; margin-bottom: 4px; font-size: 13px; justify-content: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 14px; height: 14px; background-color: var(--accent-color); border-radius: 3px;"></div>
+                    <span style="color: var(--text-color); font-weight: 600;">${name1}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 14px; height: 14px; background-color: var(--danger-color); border-radius: 3px;"></div>
+                    <span style="color: var(--text-color); font-weight: 600;">${name2}</span>
+                </div>
+            </div>`;
+      }
+
+      // Renders Continuous Timeline Curve (Release Years)
+      function renderYearChartHTML(heuristic, name1, name2) {
+        const data = heuristic.display;
+        if (!data || data.length === 0)
+          return `<div style="color:var(--text-muted); font-size: 14px;">[-] Insufficient release year timeline data.</div>`;
+
+        const chartHeight = 250;
+        const padding = { top: 40, right: 30, bottom: 30, left: 30 };
+        const chartWidth = Math.max(900, data.length * 45);
+        const maxVal = Math.max(...data.map((d) => Math.max(d.c1, d.c2)), 5);
+
+        const getX = (index) =>
+          padding.left +
+          index *
+            ((chartWidth - padding.left - padding.right) /
+              (data.length - 1 || 1));
+        const getY = (val) =>
+          chartHeight -
+          padding.bottom -
+          (val / maxVal) * (chartHeight - padding.top - padding.bottom);
+
+        let path1 = "",
+          path2 = "";
+        let points1 = "",
+          points2 = "";
+        let labels = "";
+
+        data.forEach((d, i) => {
+          const x = getX(i);
+          const y1 = getY(d.c1);
+          const y2 = getY(d.c2);
+
+          if (i === 0) {
+            path1 += `M ${x},${y1} `;
+            path2 += `M ${x},${y2} `;
+          } else {
+            const cx = (getX(i - 1) + x) / 2;
+            path1 += `C ${cx},${getY(data[i - 1].c1)} ${cx},${y1} ${x},${y1} `;
+            path2 += `C ${cx},${getY(data[i - 1].c2)} ${cx},${y2} ${x},${y2} `;
+          }
+
+          points1 += `<circle cx="${x}" cy="${y1}" r="4" fill="var(--accent-color)" />`;
+          points2 += `<circle cx="${x}" cy="${y2}" r="4" fill="var(--danger-color)" />`;
+
+          let t1y = y1 - 10,
+            t2y = y2 - 10;
+          if (Math.abs(y1 - y2) < 15 && d.c1 > 0 && d.c2 > 0) {
+            if (y1 <= y2) {
+              t1y = y1 - 10;
+              t2y = y2 + 18;
+            } else {
+              t2y = y2 - 10;
+              t1y = y1 + 18;
+            }
+          }
+
+          if (d.c1 > 0)
+            points1 += `<text x="${x}" y="${t1y}" fill="var(--accent-color)" font-size="11" text-anchor="middle" font-weight="600">${d.c1}</text>`;
+          if (d.c2 > 0)
+            points2 += `<text x="${x}" y="${t2y}" fill="var(--danger-color)" font-size="11" text-anchor="middle" font-weight="600">${d.c2}</text>`;
+
+          if (
+            i % Math.ceil(data.length / 20) === 0 ||
+            i === data.length - 1 ||
+            i === 0
+          ) {
+            labels += `<text x="${x}" y="${chartHeight - 8}" fill="var(--text-muted)" font-size="12" text-anchor="middle">${d.year}</text>`;
+          }
+        });
+
+        // Add shaded areas to timeline too
+        const bottomY = chartHeight - padding.bottom;
+        const area1 = `<path d="${path1} L ${getX(data.length - 1)},${bottomY} L ${getX(0)},${bottomY} Z" fill="rgba(61, 180, 242, 0.1)" stroke="none" />`;
+        const area2 = `<path d="${path2} L ${getX(data.length - 1)},${bottomY} L ${getX(0)},${bottomY} Z" fill="rgba(232, 93, 117, 0.1)" stroke="none" />`;
+
+        return `
+        ${renderLegend(name1, name2)}
+        <div class="graph-scroll-wrapper">
+            <svg width="${chartWidth}" height="${chartHeight}" style="min-width: 100%;">
+                ${area1} ${area2}
+                <path d="${path1}" fill="none" stroke="var(--accent-color)" stroke-width="3" opacity="0.8" />
+                <path d="${path2}" fill="none" stroke="var(--danger-color)" stroke-width="3" opacity="0.8" />
+                ${points1} ${points2} ${labels}
+            </svg>
+        </div>`;
+      }
+
+      // Renders Categorical Curve Profile (Genres & Tags) with Zones and Gaps
+      function renderCategoricalCurveChartHTML(heuristic, name1, name2) {
+        const data = heuristic.display;
+        if (!data || data.length === 0)
+          return `<div style="color:var(--text-muted); font-size: 14px;">[-] Not enough data overlapping.</div>`;
+
+        const chartHeight = 320; // Increased height to fit zone headers
+        const padding = { top: 60, right: 40, bottom: 90, left: 40 };
+        const chartWidth = Math.max(900, data.length * 85);
+
+        const maxVal = Math.max(...data.map((d) => Math.max(d.d1, d.d2)), 0.05);
+
+        const getX = (index) =>
+          padding.left +
+          index *
+            ((chartWidth - padding.left - padding.right) /
+              (data.length - 1 || 1));
+        const getY = (val) =>
+          chartHeight -
+          padding.bottom -
+          (val / maxVal) * (chartHeight - padding.top - padding.bottom);
+
+        let path1 = "",
+          path2 = "";
+        let points1 = "",
+          points2 = "";
+        let labels = "";
+        let gapLines = "";
+        let zoneDividers = "";
+
+        let lastZone = data[0].zone;
+
+        data.forEach((d, i) => {
+          const x = getX(i);
+          const y1 = getY(d.d1);
+          const y2 = getY(d.d2);
+
+          // 1. Draw Delta Line (Gap between the users)
+          if (Math.abs(y1 - y2) > 2) {
+            gapLines += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="rgba(255,255,255,0.15)" stroke-width="2" stroke-dasharray="4" />`;
+          }
+
+          // 2. Plot curves
+          if (i === 0) {
+            path1 += `M ${x},${y1} `;
+            path2 += `M ${x},${y2} `;
+          } else {
+            const cx = (getX(i - 1) + x) / 2;
+            path1 += `C ${cx},${getY(data[i - 1].d1)} ${cx},${y1} ${x},${y1} `;
+            path2 += `C ${cx},${getY(data[i - 1].d2)} ${cx},${y2} ${x},${y2} `;
+          }
+
+          points1 += `<circle cx="${x}" cy="${y1}" r="4" fill="var(--accent-color)" />`;
+          points2 += `<circle cx="${x}" cy="${y2}" r="4" fill="var(--danger-color)" />`;
+
+          let t1y = y1 - 10,
+            t2y = y2 - 10;
+          if (Math.abs(y1 - y2) < 18 && d.d1 > 0 && d.d2 > 0) {
+            if (y1 <= y2) {
+              t1y = y1 - 10;
+              t2y = y2 + 18;
+            } else {
+              t2y = y2 - 10;
+              t1y = y1 + 18;
+            }
+          }
+
+          const pct1 = Math.round(d.d1 * 100);
+          const pct2 = Math.round(d.d2 * 100);
+
+          if (pct1 > 0)
+            points1 += `<text x="${x}" y="${t1y}" fill="var(--accent-color)" font-size="11" text-anchor="middle" font-weight="600">${pct1}%</text>`;
+          if (pct2 > 0)
+            points2 += `<text x="${x}" y="${t2y}" fill="var(--danger-color)" font-size="11" text-anchor="middle" font-weight="600">${pct2}%</text>`;
+
+          labels += `<text x="${x}" y="${chartHeight - 75}" fill="var(--text-muted)" font-size="12" font-weight="500" text-anchor="end" transform="rotate(-35 ${x} ${chartHeight - 75})">${d.label}</text>`;
+
+          // 3. Draw Zone Boundaries
+          if (d.zone !== lastZone) {
+            const boundX = (getX(i - 1) + x) / 2;
+            zoneDividers += `<line x1="${boundX}" y1="25" x2="${boundX}" y2="${chartHeight - padding.bottom}" stroke="var(--border-color)" stroke-width="1" stroke-dasharray="6" />`;
+            lastZone = d.zone;
+          }
+        });
+
+        // 4. Fill Areas Under Curves (The "Mountains")
+        const bottomY = chartHeight - padding.bottom;
+        const area1 = `<path d="${path1} L ${getX(data.length - 1)},${bottomY} L ${getX(0)},${bottomY} Z" fill="rgba(61, 180, 242, 0.15)" stroke="none" />`;
+        const area2 = `<path d="${path2} L ${getX(data.length - 1)},${bottomY} L ${getX(0)},${bottomY} Z" fill="rgba(232, 93, 117, 0.15)" stroke="none" />`;
+
+        // 5. Zone Labels
+        const u1Count = data.filter((d) => d.zone === "u1").length;
+        const sharedCount = data.filter((d) => d.zone === "shared").length;
+
+        let zoneHeaders = "";
+        if (u1Count > 0) {
+          const centerX = getX(u1Count / 2 - 0.5);
+          zoneHeaders += `<text x="${centerX}" y="20" fill="var(--accent-color)" font-size="12" font-weight="bold" text-anchor="middle" opacity="0.8">← ${name1} Favors</text>`;
+        }
+        if (sharedCount > 0) {
+          const centerX = getX(u1Count + sharedCount / 2 - 0.5);
+          zoneHeaders += `<text x="${centerX}" y="20" fill="var(--text-color)" font-size="12" font-weight="bold" text-anchor="middle" opacity="0.6">Mutual Overlap</text>`;
+        }
+        if (data.length - u1Count - sharedCount > 0) {
+          const centerX = getX(
+            u1Count +
+              sharedCount +
+              (data.length - u1Count - sharedCount) / 2 -
+              0.5,
+          );
+          zoneHeaders += `<text x="${centerX}" y="20" fill="var(--danger-color)" font-size="12" font-weight="bold" text-anchor="middle" opacity="0.8">${name2} Favors →</text>`;
+        }
+
+        return `
+        ${renderLegend(name1, name2)}
+        <div class="graph-scroll-wrapper">
+            <svg width="${chartWidth}" height="${chartHeight}" style="min-width: 100%;">
+                ${zoneHeaders}
+                ${zoneDividers}
+                ${area1}
+                ${area2}
+                ${gapLines}
+                <path d="${path1}" fill="none" stroke="var(--accent-color)" stroke-width="3" opacity="0.8" />
+                <path d="${path2}" fill="none" stroke="var(--danger-color)" stroke-width="3" opacity="0.8" />
+                ${points1} ${points2} ${labels}
+            </svg>
+        </div>`;
+      }
+
+      // ==========================================
+      // PAGINATION GENERATION LAYER
+      // ==========================================
+      function buildDynamicGridHTML(items, cardGeneratorFunc) {
+        if (!items.length)
+          return `<div style="color:var(--text-muted); font-size: 14px; padding: 12px 4px;">[-] No shared tracking items.</div>`;
+
+        let html = '<div class="anime-grid-container"><div class="anime-grid">';
+        items.forEach((item, index) => {
+          const stateStyle = index >= 20 ? 'style="display: none;"' : "";
+          html += cardGeneratorFunc(item, stateStyle);
+        });
+        html += "</div>";
+
+        if (items.length > 20) {
+          const delta = items.length - 20;
+          html += `<button class="load-more-btn" onclick="triggerBatchAppend(this)">Load More (+${delta} remaining)</button>`;
+        }
+        return html + "</div>";
+      }
+
+      function triggerBatchAppend(btnElement) {
+        const container = btnElement.closest(".anime-grid-container");
+        const grid = container.querySelector(".anime-grid");
+        const hiddenElements = Array.from(grid.children).filter(
+          (el) => el.style.display === "none",
+        );
+
+        const nextChunk = hiddenElements.slice(0, 20);
+        nextChunk.forEach((el) => (el.style.display = "flex"));
+
+        const residual = hiddenElements.length - nextChunk.length;
+        if (residual <= 0) btnElement.style.display = "none";
+        else btnElement.innerText = `Load More (+${residual} remaining)`;
+      }
+
       function renderSplitAnimeHTML(displayList, name1, name2) {
-        const watchedBoth = [];
-        const planningBothReleased = [];
-        const planningBothUnreleased = [];
-        const u1PlanningOnly = [];
-        const u2PlanningOnly = [];
+        const watchedBoth = [],
+          planningBothReleased = [],
+          planningBothUnreleased = [],
+          u1PlanningOnly = [],
+          u2PlanningOnly = [];
 
         displayList.forEach((d) => {
           const payload = { title: d.title, image: d.image };
@@ -899,7 +1202,6 @@
             s2 = d.status2;
           const airing = d.airingStatus;
 
-          // UNRELEASED GLITCH FIX: Forces any unreleased media into planning logic
           if (airing === "NOT_YET_RELEASED") {
             s1 = "PLANNING";
             s2 = "PLANNING";
@@ -909,13 +1211,9 @@
             if (airing === "NOT_YET_RELEASED")
               planningBothUnreleased.push(payload);
             else planningBothReleased.push(payload);
-          } else if (s1 === "PLANNING") {
-            u1PlanningOnly.push(payload);
-          } else if (s2 === "PLANNING") {
-            u2PlanningOnly.push(payload);
-          } else {
-            watchedBoth.push(payload);
-          }
+          } else if (s1 === "PLANNING") u1PlanningOnly.push(payload);
+          else if (s2 === "PLANNING") u2PlanningOnly.push(payload);
+          else watchedBoth.push(payload);
         });
 
         let html = "<div>";
@@ -930,7 +1228,6 @@
 
         const renderSectionBlock = (label, targetArray) => {
           if (!targetArray.length) return;
-
           const uniqueMap = new Map();
           targetArray.forEach((item) => uniqueMap.set(item.title, item));
           const uniqueArray = Array.from(uniqueMap.values());
@@ -958,13 +1255,10 @@
           u2PlanningOnly,
         );
 
-        if (displayList.length === 0) {
+        if (displayList.length === 0)
           html +=
             '<div style="color:var(--text-muted); font-size:14px; padding: 12px 0;">[-] No mutual list intersections mapped.</div>';
-        }
-
-        html += "</div>";
-        return html;
+        return html + "</div>";
       }
 
       function renderGridBlockHTML(displayList) {
@@ -973,7 +1267,6 @@
           uniqueMap.set(item.title || item.name, item),
         );
         const uniqueArray = Array.from(uniqueMap.values());
-
         uniqueArray.sort((a, b) => {
           const nameA = a.title || a.name || "";
           const nameB = b.title || b.name || "";
@@ -1029,8 +1322,18 @@
           const heuristics = [
             scoreTotalAnime(user1, user2),
             scoreReleaseYear(user1, user2),
-            scoreMetadataElements(user1, user2, "genres", "Common Genres"),
-            scoreMetadataElements(user1, user2, "tags", "Common Tags"),
+            scoreDensityMetadata(
+              user1,
+              user2,
+              "genres",
+              "Genre Density Curve Profile",
+            ),
+            scoreDensityMetadata(
+              user1,
+              user2,
+              "tags",
+              "Tag Density Curve Profile",
+            ),
             scoreAllCommonAnime(user1, user2),
             scoreCommonRatedAnime(user1, user2),
             scorePerfectAnime(user1, user2),
@@ -1065,6 +1368,10 @@
               reportHtml += renderSplitAnimeHTML(h.display, name1, name2);
             else if (h.type === "grid-block")
               reportHtml += renderGridBlockHTML(h.display);
+            else if (h.type === "year-line-chart")
+              reportHtml += renderYearChartHTML(h, name1, name2);
+            else if (h.type === "categorical-curve-chart")
+              reportHtml += renderCategoricalCurveChartHTML(h, name1, name2);
 
             reportHtml += `</div>`;
           });
