@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AniList Compatibility Match</title>
+    <style>
+      /* AniList Official Dark Theme Palette */
+      :root {
+        --bg-color: #0b1622;
+        --container-bg: #151f2e;
+        --border-color: #2b3947;
+        --text-color: #edf1f5;
+        --text-muted: #9fadbd;
+        --accent-color: #3db4f2;
+        --accent-hover: #2d94ce;
+        --danger-color: #e85d75;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 20px;
+        line-height: 1.5;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .input-card {
+        background-color: var(--container-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .input-group {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+
+      input {
+        flex: 1;
+        min-width: 180px;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-color);
+        padding: 12px 16px;
+        font-size: 15px;
+        font-weight: 500;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(61, 180, 242, 0.2);
+      }
+
+      input::placeholder {
+        color: var(--border-color);
+      }
+
+      .btn {
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 12px 24px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition:
+          background-color 0.2s,
+          transform 0.1s;
+      }
+
+      .btn-primary {
+        background-color: var(--accent-color);
+      }
+
+      .btn-primary:hover {
+        background-color: var(--accent-hover);
+      }
+
+      .btn-secondary {
+        background-color: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+      }
+
+      .btn-secondary:hover {
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+        background-color: rgba(232, 93, 117, 0.1);
+      }
+
+      button:disabled {
+        background-color: #1e364a;
+        color: #5c728a;
+        cursor: not-allowed;
+      }
+
+      .status {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-top: 8px;
+        font-family: monospace;
+      }
+
+      .report-header {
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 16px;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+
+      .report-header h2 {
+        margin: 0 0 8px 0;
+        color: var(--text-color);
+      }
+
+      .coefficient-banner {
+        border: 2px solid var(--accent-color);
+        border-radius: 6px;
+        padding: 20px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: 32px;
+        background-color: rgba(61, 180, 242, 0.1);
+        color: var(--accent-color);
+      }
+
+      .heuristic-section {
+        margin-bottom: 36px;
+      }
+
+      .heuristic-title {
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-color);
+      }
+
+      .heuristic-meta {
+        color: var(--text-muted);
+        font-size: 13px;
+        margin-bottom: 14px;
+      }
+
+      .sub-label {
+        font-weight: 600;
+        color: var(--accent-color);
+        margin-top: 24px;
+        margin-bottom: 10px;
+        font-size: 15px;
+      }
+
+      /* Anime Cover Grid Layouts */
+      .anime-grid-container {
+        margin-bottom: 16px;
+      }
+
+      .anime-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+        gap: 16px;
+        margin-top: 8px;
+      }
+
+      .anime-card {
+        display: flex;
+        flex-direction: column;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        overflow: hidden;
+        transition:
+          transform 0.2s,
+          border-color 0.2s;
+        height: 100%;
+      }
+
+      .anime-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-color);
+      }
+
+      .anime-thumb {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        background-color: var(--border-color);
+      }
+
+      /* The footer isolates layout math from line-clamp clipping bugs */
+      .anime-card-footer {
+        padding: 6px 8px;
+        background-color: var(--container-bg);
+        margin-top: auto;
+        height: 50px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .anime-card-title {
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+        color: var(--text-muted);
+        text-align: center;
+        width: 100%;
+      }
+
+      .anime-card:hover .anime-card-title {
+        color: var(--accent-color);
+      }
+
+      .load-more-btn {
+        background-color: var(--container-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 16px;
+        display: block;
+        width: 100%;
+        text-align: center;
+        transition:
+          background-color 0.2s,
+          color 0.2s;
+      }
+
+      .load-more-btn:hover {
+        background-color: rgba(61, 180, 242, 0.1);
+        color: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        background-color: var(--container-bg);
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      th,
+      td {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 14px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      th {
+        background-color: var(--border-color);
+        color: var(--text-color);
+        font-weight: 600;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      .text-right {
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="input-card">
+        <div class="input-group">
+          <input
+            type="text"
+            id="user1"
+            placeholder="Enter first AniList username"
+          />
+          <input
+            type="text"
+            id="user2"
+            placeholder="Enter second AniList username"
+          />
+          <button id="runBtn" class="btn btn-primary" onclick="runAnalysis()">
+            Analyze Match
+          </button>
+          <button
+            id="clearBtn"
+            class="btn btn-secondary"
+            onclick="clearAllCache()"
+          >
+            Clear Cache
+          </button>
+        </div>
+        <div id="statusLog" class="status"></div>
+      </div>
+
+      <div id="outputReport"></div>
+    </div>
+
+    <script>
+      const EXPO_WEIGHTING_FACTOR = 1 / 3;
+      const CACHE_TIMEOUT_MS = 5 * 60 * 1000; // 5 Minutes Timeout
+
+      function logStatus(msg) {
+        document.getElementById("statusLog").innerText = msg;
+      }
+
+      function getRatio(a, b) {
+        if (Math.max(a, b) === 0) return 0;
+        return Math.min(a, b) / Math.max(a, b);
+      }
+
+      // ==========================================
+      // INITIALIZATION, URL ROUTING & KEYBINDS
+      // ==========================================
+      window.addEventListener("DOMContentLoaded", () => {
+        const u1El = document.getElementById("user1");
+        const u2El = document.getElementById("user2");
+
+        const handleEnter = (e) => {
+          if (e.key === "Enter") {
+            runAnalysis();
+          }
+        };
+        u1El.addEventListener("keypress", handleEnter);
+        u2El.addEventListener("keypress", handleEnter);
+
+        const params = new URLSearchParams(window.location.search);
+        const usersParam = params.get("users");
+
+        if (usersParam) {
+          const users = usersParam.split(",");
+          if (users.length >= 1) u1El.value = users[0].trim();
+          if (users.length >= 2) {
+            u2El.value = users[1].trim();
+            runAnalysis();
+          }
+        }
+      });
+
+      // ==========================================
+      // LOCAL STORAGE CACHE LAYER (WITH TIMEOUT)
+      // ==========================================
+      function loadUserCache(username) {
+        const cached = localStorage.getItem(
+          `anilist_cache_${username.toLowerCase()}`,
+        );
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.timestamp && parsed.data) {
+              if (Date.now() - parsed.timestamp < CACHE_TIMEOUT_MS) {
+                return parsed.data;
+              }
+            }
+            localStorage.removeItem(`anilist_cache_${username.toLowerCase()}`);
+          } catch (e) {
+            return null;
+          }
+        }
+        return null;
+      }
+
+      function saveUserCache(username, data) {
+        const cacheWrapper = {
+          timestamp: Date.now(),
+          data: data,
+        };
+        localStorage.setItem(
+          `anilist_cache_${username.toLowerCase()}`,
+          JSON.stringify(cacheWrapper),
+        );
+      }
+
+      function clearAllCache() {
+        let count = 0;
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith("anilist_cache_")) {
+            localStorage.removeItem(key);
+            count++;
+          }
+        });
+        logStatus(`Cleaned storage. Dropped ${count} cached profile records.`);
+      }
+
+      // ==========================================
+      // DATA FETCHING LAYER
+      // ==========================================
+      async function fetchCompleteUserList(username) {
+        const cachedData = loadUserCache(username);
+        if (cachedData) {
+          logStatus(`-> Loaded ${username} from browser cache.`);
+          return cachedData;
+        }
+
+        logStatus(
+          `-> Requesting library mapping for ${username} via AniList API...`,
+        );
+        const query = `
+        query ($username: String) {
+            MediaListCollection(userName: $username, type: ANIME) {
+                lists {
+                    name
+                    status
+                    entries {
+                        mediaId
+                        score(format: POINT_100)
+                        media {
+                            title { english romaji }
+                            startDate { year }
+                            status
+                            genres
+                            studios(isMain: true) { nodes { id name } }
+                            tags { name }
+                            coverImage { large }
+                        }
+                    }
+                }
+            }
+            User(name: $username) {
+                name
+                favourites {
+                    characters(page: 1, perPage: 50) { nodes { id name { full } image { large } } }
+                    anime(page: 1, perPage: 50) { nodes { id title { english romaji } coverImage { large } } }
+                }
+            }
+        }`;
+
+        const response = await fetch("https://graphql.anilist.co", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables: { username } }),
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `AniList API resolution failed for user: ${username}`,
+          );
+        }
+
+        const json = await response.json();
+        const data = json.data;
+
+        const collection = data.MediaListCollection || {};
+        const userBase = data.User || {};
+
+        if (!collection.lists || !userBase.name) {
+          throw new Error(
+            `Profile data structures incomplete for target profile: ${username}`,
+          );
+        }
+
+        const normalizedEntries = [];
+        for (const list of collection.lists) {
+          for (const entry of list.entries) {
+            entry.user_status = list.status;
+            normalizedEntries.push(entry);
+          }
+        }
+
+        const userData = {
+          name: userBase.name,
+          favourites: userBase.favourites || {},
+          entries: normalizedEntries,
+        };
+
+        saveUserCache(username, userData);
+        return userData;
+      }
+
+      // ==========================================
+      // COMPUTATIONAL PROCESSORS (HEURISTICS)
+      // ==========================================
+      function scoreTotalAnime(u1, u2) {
+        const e1 = u1.entries,
+          e2 = u2.entries;
+
+        const comp1 = e1.filter((e) => e.user_status === "COMPLETED").length;
+        const comp2 = e2.filter((e) => e.user_status === "COMPLETED").length;
+
+        const plan1 = new Set(
+          e1.filter((e) => e.user_status === "PLANNING").map((e) => e.mediaId),
+        );
+        const plan2 = new Set(
+          e2.filter((e) => e.user_status === "PLANNING").map((e) => e.mediaId),
+        );
+
+        const set1Ids = e1.map((e) => e.mediaId);
+        const set2Ids = e2.map((e) => e.mediaId);
+        const sharedAnimeIds = set1Ids.filter((id) => set2Ids.includes(id));
+
+        const bothPlanning = [...plan1].filter((id) => plan2.has(id)).length;
+        const u1PlanningOnly = sharedAnimeIds.filter(
+          (id) => plan1.has(id) && !plan2.has(id),
+        ).length;
+        const u2PlanningOnly = sharedAnimeIds.filter(
+          (id) => plan2.has(id) && !plan1.has(id),
+        ).length;
+
+        const scores1 = e1.filter((e) => e.score > 0).map((e) => e.score);
+        const scores2 = e2.filter((e) => e.score > 0).map((e) => e.score);
+        const mean1 = scores1.length
+          ? scores1.reduce((a, b) => a + b, 0) / scores1.length
+          : 0;
+        const mean2 = scores2.length
+          ? scores2.reduce((a, b) => a + b, 0) / scores2.length
+          : 0;
+
+        const score =
+          (getRatio(comp1, comp2) + getRatio(e1.length, e2.length)) / 2;
+
+        return {
+          title: "Watch Stats",
+          score,
+          weight: 0.25,
+          type: "table",
+          display: [
+            { title: "Total Entries", stats: [e1.length, e2.length] },
+            { title: "Completed Count", stats: [comp1, comp2] },
+            {
+              title: "Global Mean Rating",
+              stats: [mean1.toFixed(1), mean2.toFixed(1)],
+            },
+            {
+              title: "Planning (Shared Overlap)",
+              stats: [`${u1PlanningOnly} Only`, `${u2PlanningOnly} Only`],
+            },
+            {
+              title: "Planning (Both Users)",
+              stats: [bothPlanning, bothPlanning],
+            },
+          ],
+        };
+      }
+
+      function scoreReleaseYear(u1, u2) {
+        const getDecades = (entries) => {
+          const decs = {};
+          entries.forEach((e) => {
+            const year = e.media?.startDate?.year;
+            if (year) {
+              const dec = `${Math.floor(year / 10) * 10}s`;
+              decs[dec] = (decs[dec] || 0) + 1;
+            }
+          });
+          return decs;
+        };
+
+        const dec1 = getDecades(u1.entries),
+          dec2 = getDecades(u2.entries);
+        const allDecs = [
+          ...new Set([...Object.keys(dec1), ...Object.keys(dec2)]),
+        ].sort();
+
+        const scores = [];
+        const display = [];
+
+        allDecs.forEach((d) => {
+          const cnt1 = dec1[d] || 0,
+            cnt2 = dec2[d] || 0;
+          const prop1 = cnt1 / Math.max(1, u1.entries.length);
+          const prop2 = cnt2 / Math.max(1, u2.entries.length);
+
+          if (prop1 >= 0.01 && prop2 >= 0.01) {
+            scores.push(getRatio(prop1, prop2));
+            display.push({
+              title: d,
+              stats: [
+                `${Math.round(prop1 * 100)}%`,
+                `${Math.round(prop2 * 100)}%`,
+              ],
+            });
+          }
+        });
+
+        const score = scores.length
+          ? scores.reduce((a, b) => a + b, 0) / scores.length
+          : 0;
+        return {
+          title: "Release Year Stats",
+          score,
+          weight: 1.0,
+          type: "table",
+          display,
+        };
+      }
+
+      function scoreMetadataElements(u1, u2, keyType, title) {
+        const avg1 =
+          u1.entries
+            .filter((e) => e.score > 0)
+            .reduce((a, b) => a + b.score, 0) /
+          (u1.entries.filter((e) => e.score > 0).length || 1);
+        const avg2 =
+          u2.entries
+            .filter((e) => e.score > 0)
+            .reduce((a, b) => a + b.score, 0) /
+          (u2.entries.filter((e) => e.score > 0).length || 1);
+
+        const aggregateMeta = (entries, thresholdAvg) => {
+          const store = {};
+          entries.forEach((e) => {
+            const media = e.media || {};
+            let targets = [];
+            if (keyType === "genres") targets = media.genres || [];
+            else if (keyType === "tags")
+              targets = (media.tags || []).map((t) => t.name);
+            else if (keyType === "studios")
+              targets = (media.studios?.nodes || []).map((s) => s.name);
+
+            targets.forEach((name) => {
+              if (!store[name]) store[name] = { count: 0, scores: [] };
+              store[name].count += 1;
+              if (e.score > 0) store[name].scores.push(e.score);
+            });
+          });
+          return store;
+        };
+
+        const m1 = aggregateMeta(u1.entries, avg1);
+        const m2 = aggregateMeta(u2.entries, avg2);
+
+        const common = Object.keys(m1).filter(
+          (name) => m2[name] && m1[name].count >= 5 && m2[name].count >= 5,
+        );
+        const sortedCommon = common
+          .sort((a, b) => m2[b].count * m1[b].count - m2[a].count * m1[a].count)
+          .slice(0, 15);
+
+        const display = [];
+        sortedCommon.forEach((name) => {
+          const s1 = m1[name].scores.length
+            ? m1[name].scores.reduce((a, b) => a + b, 0) /
+              m1[name].scores.length
+            : 0;
+          const s2 = m2[name].scores.length
+            ? m2[name].scores.reduce((a, b) => a + b, 0) /
+              m2[name].scores.length
+            : 0;
+          display.push(
+            {
+              title: `${name} (Count)`,
+              stats: [m1[name].count, m2[name].count],
+            },
+            {
+              title: `${name} (Mean Rating)`,
+              stats: [s1 ? s1.toFixed(1) : "N/A", s2 ? s2.toFixed(1) : "N/A"],
+            },
+          );
+        });
+
+        const ratio =
+          common.length /
+          Math.max(1, Math.min(Object.keys(m1).length, Object.keys(m2).length));
+        return {
+          title,
+          score: Math.min(Math.pow(ratio, EXPO_WEIGHTING_FACTOR), 1.0),
+          weight: 1.0,
+          type: "table",
+          display,
+        };
+      }
+
+      function scoreAllCommonAnime(u1, u2) {
+        const display = [];
+        const map2 = {};
+        u2.entries.forEach(
+          (e) =>
+            (map2[e.mediaId] = {
+              status: e.user_status,
+              title: e.media.title.english || e.media.title.romaji,
+              air: e.media.status,
+              img: e.media.coverImage?.large || "",
+            }),
+        );
+
+        u1.entries.forEach((e) => {
+          if (map2[e.mediaId]) {
+            display.push({
+              title: e.media.title.english || e.media.title.romaji,
+              image: e.media.coverImage?.large || map2[e.mediaId].img,
+              status1: e.user_status,
+              status2: map2[e.mediaId].status,
+              airingStatus: map2[e.mediaId].air,
+            });
+          }
+        });
+
+        const ratio =
+          display.length /
+          Math.max(1, Math.min(u1.entries.length, u2.entries.length));
+        return {
+          title: "All Shared Anime",
+          score: Math.min(Math.pow(ratio, EXPO_WEIGHTING_FACTOR), 1.0),
+          weight: 1.0,
+          type: "split-anime",
+          display,
+        };
+      }
+
+      function scoreCommonRatedAnime(u1, u2) {
+        const r1 = new Set(
+          u1.entries.filter((e) => e.score > 0).map((e) => e.mediaId),
+        );
+        const r2 = u2.entries.filter((e) => e.score > 0).map((e) => e.mediaId);
+        const common = r2.filter((id) => r1.has(id));
+
+        const assets = u2.entries
+          .filter((e) => common.includes(e.mediaId))
+          .map((e) => ({
+            title: e.media.title.english || e.media.title.romaji,
+            image: e.media.coverImage?.large || "",
+          }));
+
+        const ratio = common.length / Math.max(1, Math.min(r1.size, r2.length));
+        return {
+          title: "Common Rated Overlap",
+          score: Math.min(Math.pow(ratio, EXPO_WEIGHTING_FACTOR), 1.0),
+          weight: 1.5,
+          type: "grid-block",
+          display: assets,
+        };
+      }
+
+      function scorePerfectAnime(u1, u2) {
+        const p1 = new Set(
+          u1.entries
+            .filter((e) => e.score >= 90 || e.score === 10)
+            .map((e) => e.mediaId),
+        );
+        const p2 = u2.entries.filter((e) => e.score >= 90 || e.score === 10);
+        const common = p2
+          .filter((e) => p1.has(e.mediaId))
+          .map((e) => ({
+            title: e.media.title.english || e.media.title.romaji,
+            image: e.media.coverImage?.large || "",
+          }));
+
+        return {
+          title: "Mutual Max Perfects",
+          score: Math.min(
+            Math.pow(common.length / 8, EXPO_WEIGHTING_FACTOR),
+            1.0,
+          ),
+          weight: 2.0,
+          type: "grid-block",
+          display: common,
+        };
+      }
+
+      function scoreFavoriteAnime(u1, u2) {
+        const f1 = new Set(
+          (u1.favourites?.anime?.nodes || []).map((n) => n.id),
+        );
+        const nodes2 = u2.favourites?.anime?.nodes || [];
+        const commonNodes = nodes2.filter((n) => f1.has(n.id));
+
+        const common = commonNodes.map((n) => ({
+          title: n.title.english || n.title.romaji,
+          image: n.coverImage?.large || "",
+        }));
+        return {
+          title: "Mutual Account Favorites",
+          score: Math.min(
+            Math.pow(common.length / 8, EXPO_WEIGHTING_FACTOR),
+            1.0,
+          ),
+          weight: 4.0,
+          type: "grid-block",
+          display: common,
+        };
+      }
+
+      function scoreFavoriteCharacters(u1, u2) {
+        const c1 = {};
+        (u1.favourites?.characters?.nodes || []).forEach(
+          (n) =>
+            (c1[n.id] = { name: n.name.full, image: n.image?.large || "" }),
+        );
+        const common = (u2.favourites?.characters?.nodes || [])
+          .filter((n) => c1[n.id])
+          .map((n) => c1[n.id]);
+
+        return {
+          title: "Shared Favorite Characters",
+          score: Math.min(
+            Math.pow(common.length / 6, EXPO_WEIGHTING_FACTOR),
+            1.0,
+          ),
+          weight: 0.8,
+          type: "grid-block",
+          display: common,
+        };
+      }
+
+      // ==========================================
+      // PAGINATION GENERATION LAYER (BATCHED BY 20)
+      // ==========================================
+      function buildDynamicGridHTML(items, cardGeneratorFunc) {
+        if (!items.length) {
+          return `<div style="color:var(--text-muted); font-size: 14px; padding: 12px 4px;">[-] No shared tracking items.</div>`;
+        }
+
+        let html = '<div class="anime-grid-container">';
+        html += '<div class="anime-grid">';
+
+        items.forEach((item, index) => {
+          const stateStyle = index >= 20 ? 'style="display: none;"' : "";
+          html += cardGeneratorFunc(item, stateStyle);
+        });
+
+        html += "</div>";
+
+        if (items.length > 20) {
+          const delta = items.length - 20;
+          html += `<button class="load-more-btn" onclick="triggerBatchAppend(this)">Load More (+${delta} remaining)</button>`;
+        }
+
+        html += "</div>";
+        return html;
+      }
+
+      function triggerBatchAppend(btnElement) {
+        const container = btnElement.closest(".anime-grid-container");
+        const grid = container.querySelector(".anime-grid");
+        const hiddenElements = Array.from(grid.children).filter(
+          (el) => el.style.display === "none",
+        );
+
+        const nextChunk = hiddenElements.slice(0, 20);
+        nextChunk.forEach((el) => (el.style.display = "flex"));
+
+        const residual = hiddenElements.length - nextChunk.length;
+        if (residual <= 0) {
+          btnElement.style.display = "none";
+        } else {
+          btnElement.innerText = `Load More (+${residual} remaining)`;
+        }
+      }
+
+      // ==========================================
+      // RENDERING ENGINE
+      // ==========================================
+      function renderTableHTML(heuristic, name1, name2) {
+        let rowsHtml = heuristic.display
+          .map(
+            (row) => `
+            <tr>
+                <td>${row.title}</td>
+                <td class="text-right">${row.stats[0]}</td>
+                <td class="text-right">${row.stats[1]}</td>
+            </tr>
+        `,
+          )
+          .join("");
+
+        return `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric Target</th>
+                        <th class="text-right">${name1}</th>
+                        <th class="text-right">${name2}</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>`;
+      }
+
+      function renderSplitAnimeHTML(displayList, name1, name2) {
+        const watchedBoth = [];
+        const planningBothReleased = [];
+        const planningBothUnreleased = [];
+        const u1PlanningOnly = [];
+        const u2PlanningOnly = [];
+
+        displayList.forEach((d) => {
+          const payload = { title: d.title, image: d.image };
+          const s1 = d.status1,
+            s2 = d.status2;
+          const airing = d.airingStatus;
+
+          if (s1 === "PLANNING" && s2 === "PLANNING") {
+            if (airing === "NOT_YET_RELEASED")
+              planningBothUnreleased.push(payload);
+            else planningBothReleased.push(payload);
+          } else if (s1 === "PLANNING") {
+            u1PlanningOnly.push(payload);
+          } else if (s2 === "PLANNING") {
+            u2PlanningOnly.push(payload);
+          } else {
+            watchedBoth.push(payload);
+          }
+        });
+
+        let html = "<div>";
+        const cardGenerator = (item, style) => `
+            <div class="anime-card" ${style}>
+                <img class="anime-thumb" src="${item.image || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"}" alt="Thumb" loading="lazy" />
+                <div class="anime-card-footer">
+                    <div class="anime-card-title" title="${item.title}">${item.title}</div>
+                </div>
+            </div>
+        `;
+
+        const renderSectionBlock = (label, targetArray) => {
+          if (!targetArray.length) return;
+          html += `<div class="sub-label">${label} (${targetArray.length} total)</div>`;
+          targetArray.sort((a, b) => a.title.localeCompare(b.title));
+          html += buildDynamicGridHTML(targetArray, cardGenerator);
+        };
+
+        renderSectionBlock("Both Active or Completed", watchedBoth);
+        renderSectionBlock(
+          "Both Plan to Watch - Released / Airing",
+          planningBothReleased,
+        );
+        renderSectionBlock(
+          "Both Plan to Watch - Not Yet Released",
+          planningBothUnreleased,
+        );
+        renderSectionBlock(
+          `${name1} Plans to Watch, ${name2} Has Watched / Active`,
+          u1PlanningOnly,
+        );
+        renderSectionBlock(
+          `${name2} Plans to Watch, ${name1} Has Watched / Active`,
+          u2PlanningOnly,
+        );
+
+        if (displayList.length === 0) {
+          html +=
+            '<div style="color:var(--text-muted); font-size:14px; padding: 12px 0;">[-] No mutual list intersections mapped.</div>';
+        }
+
+        html += "</div>";
+        return html;
+      }
+
+      function renderGridBlockHTML(displayList) {
+        displayList.sort((a, b) => {
+          const nameA = a.title || a.name || "";
+          const nameB = b.title || b.name || "";
+          return nameA.localeCompare(nameB);
+        });
+
+        return buildDynamicGridHTML(displayList, (item, style) => {
+          const titleString = item.title || item.name || "Unknown";
+          return `
+                <div class="anime-card" ${style}>
+                    <img class="anime-thumb" src="${item.image || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"}" alt="Thumb" loading="lazy" />
+                    <div class="anime-card-footer">
+                        <div class="anime-card-title" title="${titleString}">${titleString}</div>
+                    </div>
+                </div>
+            `;
+        });
+      }
+
+      // ==========================================
+      // MAIN EXECUTION CONTROLLER
+      // ==========================================
+      async function runAnalysis() {
+        const u1El = document.getElementById("user1");
+        const u2El = document.getElementById("user2");
+
+        const u1Input = u1El.value.trim();
+        const u2Input = u2El.value.trim();
+        const runBtn = document.getElementById("runBtn");
+
+        if (!u1Input || !u2Input) {
+          alert("Error: Please enter both usernames before running.");
+          return;
+        }
+
+        const newUrl = `${window.location.pathname}?users=${encodeURIComponent(u1Input + "," + u2Input)}`;
+        window.history.pushState({ path: newUrl }, "", newUrl);
+
+        runBtn.disabled = true;
+        document.getElementById("outputReport").innerHTML = "";
+
+        try {
+          const user1 = await fetchCompleteUserList(u1Input);
+          const user2 = await fetchCompleteUserList(u2Input);
+
+          logStatus(
+            "Matrix data loaded. Resolving compatibility heuristics algorithms...",
+          );
+
+          const name1 = user1.name;
+          const name2 = user2.name;
+
+          const heuristics = [
+            scoreTotalAnime(user1, user2),
+            scoreReleaseYear(user1, user2),
+            scoreMetadataElements(user1, user2, "genres", "Common Genres"),
+            scoreMetadataElements(user1, user2, "tags", "Common Tags"),
+            scoreAllCommonAnime(user1, user2),
+            scoreCommonRatedAnime(user1, user2),
+            scorePerfectAnime(user1, user2),
+            scoreFavoriteAnime(user1, user2),
+            scoreFavoriteCharacters(user1, user2),
+            scoreMetadataElements(user1, user2, "studios", "Common Studios"),
+          ];
+
+          let totalScore = 0,
+            totalWeight = 0;
+          let reportHtml = `
+                <div class="report-header">
+                    <h2>AniList Compatibility Report</h2>
+                    <div style="color:var(--text-muted); font-size:14px;">${name1} x ${name2}</div>
+                </div>
+            `;
+
+          heuristics.forEach((h) => {
+            const scoreVal = isNaN(h.score) ? 0.5 : h.score;
+            totalScore += scoreVal * h.weight;
+            totalWeight += h.weight;
+
+            reportHtml += `
+                    <div class="heuristic-section">
+                        <div class="heuristic-title">[${Math.round(scoreVal * 100)}%] ${h.title}</div>
+                        <div class="heuristic-meta">Calculation Layer Weight: x${h.weight.toFixed(2)}</div>
+                `;
+
+            if (h.type === "table")
+              reportHtml += renderTableHTML(h, name1, name2);
+            else if (h.type === "split-anime")
+              reportHtml += renderSplitAnimeHTML(h.display, name1, name2);
+            else if (h.type === "grid-block")
+              reportHtml += renderGridBlockHTML(h.display);
+
+            reportHtml += `</div>`;
+          });
+
+          const finalCoefficient = Math.round((totalScore / totalWeight) * 100);
+          reportHtml += `
+                <div class="coefficient-banner">
+                    MATCH SCORE: ${finalCoefficient}%
+                </div>
+            `;
+
+          document.getElementById("outputReport").innerHTML = reportHtml;
+          logStatus("Analysis complete.");
+        } catch (err) {
+          console.error(err);
+          logStatus(`Execution failed: ${err.message}`);
+        } finally {
+          runBtn.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>
